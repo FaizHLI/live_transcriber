@@ -36,6 +36,7 @@ class TranscriptEntry:
     """Represents a single transcript entry with text and keywords."""
     text: str
     timestamp: float
+    entry_id: str = ""  # Unique ID for tracking confirmations
     keywords_found: List[str] = field(default_factory=list)
     has_keyword: bool = False  # Flag for keyword alerts
 
@@ -171,10 +172,12 @@ class LiveTranscriber:
         if has_keyword:
             print(f"🔔 KEYWORD ALERT: {found_keywords} detected at {time.strftime('%H:%M:%S')}")
         
-        # Create transcript entry
+        # Create transcript entry with unique ID
+        entry_id = f"{time.time():.3f}"
         entry = TranscriptEntry(
             text=text,
             timestamp=time.time(),
+            entry_id=entry_id,
             keywords_found=found_keywords,
             has_keyword=has_keyword
         )
@@ -440,6 +443,8 @@ def main():
         st.session_state.keywords = []  # Flat list of all keyword variations
     if 'keyword_groups' not in st.session_state:
         st.session_state.keyword_groups = []  # List of (primary, [variations]) tuples
+    if 'confirmed_alerts' not in st.session_state:
+        st.session_state.confirmed_alerts = set()  # Set of confirmed entry_id:keyword pairs
     
     transcriber = st.session_state.transcriber
     
@@ -551,12 +556,59 @@ Tariff"""
         else:
             st.markdown(f'<p class="status-stopped">● {status}</p>', unsafe_allow_html=True)
         
-        # Keyword alert count
+        # Keyword Alerts Section
         if st.session_state.initialized:
             entries = transcriber.get_transcript()
-            keyword_count = sum(1 for e in entries if e.has_keyword)
-            if keyword_count > 0:
-                st.warning(f"🔔 {keyword_count} keyword alerts")
+            keyword_entries = [e for e in entries if e.has_keyword]
+            
+            if keyword_entries:
+                st.divider()
+                st.subheader("🔔 Keyword Alerts")
+                
+                # Count confirmed vs total
+                total_alerts = sum(len(e.keywords_found) for e in keyword_entries)
+                confirmed_count = len(st.session_state.confirmed_alerts)
+                
+                col_count, col_clear = st.columns([3, 2])
+                with col_count:
+                    st.caption(f"{confirmed_count}/{total_alerts} confirmed")
+                with col_clear:
+                    if st.button("Reset", key="clear_confirmations", help="Clear all confirmations"):
+                        st.session_state.confirmed_alerts = set()
+                        st.rerun()
+                
+                # Show each keyword detection with checkbox
+                for entry in reversed(keyword_entries):  # Most recent first
+                    entry_time = datetime.fromtimestamp(entry.timestamp).strftime("%H:%M:%S")
+                    
+                    for kw in entry.keywords_found:
+                        alert_key = f"{entry.entry_id}:{kw}"
+                        is_confirmed = alert_key in st.session_state.confirmed_alerts
+                        
+                        # Create checkbox
+                        col1, col2 = st.columns([1, 5])
+                        with col1:
+                            if st.checkbox("", value=is_confirmed, key=f"chk_{alert_key}", label_visibility="collapsed"):
+                                st.session_state.confirmed_alerts.add(alert_key)
+                            else:
+                                st.session_state.confirmed_alerts.discard(alert_key)
+                        
+                        with col2:
+                            # Show keyword with color based on confirmation
+                            if alert_key in st.session_state.confirmed_alerts:
+                                # Confirmed - green
+                                st.markdown(
+                                    f'<span style="color:#32CD32;font-weight:bold;">✓ {kw}</span> '
+                                    f'<span style="color:#666;font-size:0.8rem;">{entry_time}</span>',
+                                    unsafe_allow_html=True
+                                )
+                            else:
+                                # Unconfirmed - gold/yellow
+                                st.markdown(
+                                    f'<span style="color:#FFD700;font-weight:bold;">{kw}</span> '
+                                    f'<span style="color:#666;font-size:0.8rem;">{entry_time}</span>',
+                                    unsafe_allow_html=True
+                                )
     
     # Main content
     st.markdown('<h1 class="main-header">🎙️ Live Transcriber</h1>', unsafe_allow_html=True)
@@ -618,17 +670,34 @@ Tariff"""
             highlighted_text = highlight_keywords(entry.text, entry.keywords_found)
             
             # Build entry HTML - keywords badges for matches found
+            # Check which keywords are confirmed
             keywords_html = ""
+            all_confirmed = True
             if entry.keywords_found:
-                badges = [f'<span class="keyword-badge">{escape_html(kw)}</span>' for kw in entry.keywords_found]
+                badges = []
+                for kw in entry.keywords_found:
+                    alert_key = f"{entry.entry_id}:{kw}"
+                    if alert_key in st.session_state.confirmed_alerts:
+                        # Confirmed - green badge
+                        badges.append(f'<span style="background-color:#32CD32;color:black;padding:2px 6px;border-radius:3px;font-size:0.8rem;margin-right:5px;">✓ {escape_html(kw)}</span>')
+                    else:
+                        # Unconfirmed - gold badge
+                        badges.append(f'<span class="keyword-badge">{escape_html(kw)}</span>')
+                        all_confirmed = False
                 keywords_html = " ".join(badges)
             
-            # Style based on whether keywords were found
+            # Style based on whether keywords were found and confirmed
             if entry.has_keyword:
-                # Keyword alert - highlighted entry
-                border_color = "#FFD700"  # Gold
-                bg_color = "#2D2D1F"  # Darker gold tint
-                alert_icon = "🔔 "
+                if all_confirmed and entry.keywords_found:
+                    # All confirmed - green
+                    border_color = "#32CD32"  # Green
+                    bg_color = "#1F2D1F"  # Darker green tint
+                    alert_icon = "✓ "
+                else:
+                    # Unconfirmed - gold
+                    border_color = "#FFD700"  # Gold
+                    bg_color = "#2D2D1F"  # Darker gold tint
+                    alert_icon = "🔔 "
             else:
                 # Normal entry
                 border_color = "#444"
