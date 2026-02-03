@@ -1,8 +1,8 @@
 # 🎙️ Live Transcriber
 
-**Real-time Speaker Diarization & Keyword Tracking for Apple Silicon**
+**Real-time Transcription & Keyword Tracking for Apple Silicon**
 
-A Streamlit dashboard that captures live system audio, performs real-time transcription using MLX-Whisper, and identifies speakers using pyannote.audio. Track keywords and see them highlighted in the live feed.
+A Streamlit dashboard that captures live system audio and performs real-time transcription using MLX-Whisper. Track keywords and see them highlighted in the live feed with alerts.
 
 ![Apple Silicon Optimized](https://img.shields.io/badge/Apple%20Silicon-Optimized-blue)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10+-green)
@@ -11,18 +11,18 @@ A Streamlit dashboard that captures live system audio, performs real-time transc
 ## ✨ Features
 
 - **Real-time Transcription**: Uses MLX-Whisper (large-v3-turbo) optimized for Apple Silicon
-- **Speaker Diarization**: Identifies different speakers using pyannote.audio (community-1 model)
 - **Keyword Tracking**: Highlight and track specific words/phrases in real-time
-- **Apple Silicon Optimization**: Leverages MPS (Metal Performance Shaders) for GPU acceleration
-- **5-Second Sliding Window**: Near-real-time processing with overlapping buffers
-- **Beautiful UI**: Modern Streamlit dashboard with speaker color-coding
+- **Keyword Alerts**: Visual and console alerts when tracked keywords are detected
+- **Plural Matching**: "baby" matches "babies", "tax" matches "taxes"
+- **Compound Words**: "shut down" matches "shutdown", "shut-down"
+- **Apple Silicon Optimization**: Leverages MLX framework for GPU acceleration
+- **Beautiful UI**: Modern Streamlit dashboard with keyword highlighting
 
 ## 📋 Prerequisites
 
-- **macOS** with Apple Silicon (M1/M2/M3)
+- **macOS** with Apple Silicon (M1/M2/M3/M4)
 - **Python 3.10+** (recommended: Python 3.11)
 - **BlackHole 2ch** virtual audio driver
-- **Hugging Face account** (for pyannote models)
 
 ## 🔧 Setup Guide
 
@@ -53,6 +53,7 @@ This is **critical** for capturing system audio. You need to create a Multi-Outp
    - Check **"BlackHole 2ch"** ✅
    - Check your **regular output device** (e.g., "MacBook Pro Speakers" or your headphones) ✅
    - Make sure BlackHole 2ch is listed **FIRST** (drag to reorder if needed)
+   - Set the sample rate to **48000 Hz**
    - Optionally rename it to "System + BlackHole"
 
 4. **Set as System Output**
@@ -70,39 +71,7 @@ This is **critical** for capturing system audio. You need to create a Multi-Outp
 
 > **Note**: When using the Multi-Output Device, you cannot adjust volume from the menu bar. Use the volume controls in your app or use the keyboard volume buttons.
 
-### Step 3: Get a Hugging Face Token
-
-The pyannote.audio speaker diarization models require authentication.
-
-1. **Create a Hugging Face account** (if you don't have one)
-   - Go to: https://huggingface.co/join
-
-2. **Create an access token**
-   - Go to: https://huggingface.co/settings/tokens
-   - Click **"New token"**
-   - Name it (e.g., "live-transcriber")
-   - Select **"Read"** access
-   - Click **"Generate token"**
-   - **Copy the token** (you'll need it later)
-
-3. **Accept the model licenses**
-   
-   You must accept the terms for these models (click **"Agree and access repository"** on each):
-   - https://huggingface.co/pyannote/speaker-diarization-community-1
-   - https://huggingface.co/pyannote/segmentation-3.0
-   
-   > **Note**: Make sure you're logged into the same Hugging Face account that generated your token.
-
-4. **Set the environment variable** (optional but recommended)
-   ```bash
-   # Add to your ~/.zshrc or ~/.bashrc
-   export HF_TOKEN="hf_your_token_here"
-   
-   # Reload your shell
-   source ~/.zshrc
-   ```
-
-### Step 4: Install Python Dependencies
+### Step 3: Install Python Dependencies
 
 ```bash
 # Navigate to the project directory
@@ -116,7 +85,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 5: Run the Application
+### Step 4: Run the Application
 
 ```bash
 # Make sure your virtual environment is activated
@@ -130,22 +99,27 @@ The app will open in your browser at `http://localhost:8501`
 
 ## 🚀 Usage
 
-1. **Enter your Hugging Face Token** in the sidebar (if not set as environment variable)
+1. **Add Keywords** to track in the sidebar
+   - One keyword/phrase per line
+   - Use ` / ` to separate variations (e.g., `AI / Artificial Intelligence`)
+   - Example:
+     ```
+     AI / Artificial Intelligence
+     Tax Cut
+     Immigration / Immigrant
+     ```
 
-2. **Add Keywords** to track in the sidebar (comma-separated)
-   - Example: `meeting, deadline, action item, next steps`
+2. **Click "Initialize"** to load the MLX-Whisper model
+   - This may take 30-60 seconds on first run (model is downloaded)
 
-3. **Click "Initialize"** to load the transcription and diarization models
-   - This may take 30-60 seconds on first run (models are downloaded)
+3. **Click "Start"** to begin live transcription
 
-4. **Click "Start"** to begin live transcription
+4. **Watch the Live Feed** for real-time transcriptions with:
+   - 🔔 Keyword alerts (highlighted entries)
+   - Timestamps for each transcription
+   - Keyword badges showing which words matched
 
-5. **Watch the Live Feed** for real-time transcriptions with:
-   - Speaker labels (SPEAKER_00, SPEAKER_01, etc.)
-   - Highlighted keywords
-   - Timestamps
-
-6. **Click "Stop"** when done
+5. **Click "Stop"** when done
 
 ## 🏗️ Architecture
 
@@ -154,7 +128,7 @@ live_transcriber/
 ├── app.py              # Main Streamlit application
 ├── audio_capture.py    # BlackHole audio capture module
 ├── transcriber.py      # MLX-Whisper transcription module
-├── diarizer.py         # pyannote.audio speaker diarization
+├── config.py           # Configuration settings
 ├── requirements.txt    # Python dependencies
 └── README.md           # This file
 ```
@@ -163,8 +137,7 @@ live_transcriber/
 
 - **Audio Capture**: Uses `sounddevice` to capture from BlackHole at 16kHz
 - **Transcription**: MLX-Whisper (large-v3-turbo) optimized for Apple Silicon
-- **Diarization**: pyannote.audio (community-1 model) with MPS (GPU) acceleration
-- **Processing**: 5-second sliding window with 2.5-second overlap
+- **Keyword Matching**: Whole-word matching with plural and compound word support
 
 ## ⚙️ Configuration
 
@@ -181,8 +154,8 @@ BLOCK_SIZE = 1024    # Audio block size
 
 In `app.py`:
 ```python
-BUFFER_DURATION = 5.0    # 5-second sliding window
-PROCESS_INTERVAL = 2.5   # Process every 2.5 seconds
+BUFFER_DURATION = 10.0   # 10-second sliding window
+PROCESS_INTERVAL = 5.0   # Process every 5 seconds
 ```
 
 ### Model Settings
@@ -212,37 +185,6 @@ Error: Could not find 'BlackHole 2ch' device.
 2. Make sure audio is playing from an app
 3. Check that BlackHole is checked in the Multi-Output Device
 
-### Hugging Face Authentication Error
-
-```
-401 Client Error: Unauthorized
-```
-or
-```
-An error happened while trying to locate the file on the Hub
-```
-
-**Solutions:**
-1. Verify your token is correct
-2. Make sure you accepted **ALL** model licenses:
-   - https://huggingface.co/pyannote/speaker-diarization-community-1
-   - https://huggingface.co/pyannote/segmentation-3.0
-3. Ensure you're logged into the same HF account that created the token
-4. Try regenerating your token with "Write" permissions
-
-### MPS Not Available
-
-If you see the model running on CPU instead of MPS:
-
-```python
-import torch
-print(torch.backends.mps.is_available())  # Should be True
-```
-
-**Solutions:**
-1. Update PyTorch: `pip install --upgrade torch`
-2. Make sure you're on macOS 12.3+ with Apple Silicon
-
 ### Slow Transcription
 
 **Solutions:**
@@ -261,7 +203,6 @@ print(torch.backends.mps.is_available())  # Should be True
 
 - All processing happens **locally** on your Mac
 - No audio is sent to external servers
-- Hugging Face is only used for model downloads (one-time)
 - Your transcriptions stay on your machine
 
 ## 📝 License
@@ -271,6 +212,5 @@ MIT License - Feel free to use and modify as needed.
 ## 🙏 Credits
 
 - [MLX-Whisper](https://github.com/ml-explore/mlx-examples) - Apple's MLX framework
-- [pyannote.audio](https://github.com/pyannote/pyannote-audio) - Speaker diarization
 - [BlackHole](https://existential.audio/blackhole/) - Virtual audio driver
 - [Streamlit](https://streamlit.io/) - Web application framework

@@ -1,30 +1,25 @@
 """
-Live Transcriber - Real-time Speaker & Keyword Tracking Dashboard
-Optimized for Apple Silicon with MLX-Whisper and pyannote.audio
+Live Transcriber - Real-time Transcription & Keyword Tracking Dashboard
+Optimized for Apple Silicon with MLX-Whisper
 
 This Streamlit application captures live system audio via BlackHole 2ch,
-performs real-time transcription and speaker diarization, and highlights
-user-specified keywords in the live feed.
+performs real-time transcription, and highlights user-specified keywords
+in the live feed with alerts.
 """
 
 import streamlit as st
 import numpy as np
 import time
 import re
-import os
 from collections import deque
 from threading import Thread, Event, Lock
-from typing import List, Dict, Optional, Any
+from typing import List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Import our custom modules
 from audio_capture import AudioCapture
-from transcriber import get_transcriber, MLXWhisperTranscriber
+from transcriber import get_transcriber
 
 
 # Page configuration
@@ -74,13 +69,10 @@ class LiveTranscriber:
         self._status = "Idle"
         self._last_process_time = 0.0
         
-    def initialize(self, hf_token: Optional[str] = None) -> bool:
+    def initialize(self) -> bool:
         """
         Initialize transcription model.
         
-        Args:
-            hf_token: Hugging Face token (not used currently, kept for future)
-            
         Returns:
             True if initialization successful
         """
@@ -454,20 +446,6 @@ def main():
     # Sidebar
     with st.sidebar:
         st.title("⚙️ Settings")
-        
-        # Hugging Face Token
-        st.subheader("🔑 Authentication")
-        hf_token = st.text_input(
-            "Hugging Face Token",
-            type="password",
-            value=os.getenv('HF_TOKEN', ''),
-            help="Required for speaker diarization. Get your token at huggingface.co/settings/tokens"
-        )
-        
-        if hf_token:
-            os.environ['HF_TOKEN'] = hf_token
-        
-        st.divider()
         
         # Keywords
         st.subheader("🔍 Keywords")

@@ -3,12 +3,6 @@ Configuration settings for Live Transcriber
 Modify these values to customize the application behavior.
 """
 
-import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
 
 # =============================================================================
 # Audio Settings
@@ -32,11 +26,11 @@ BLOCK_SIZE = 1024
 # =============================================================================
 
 # Duration of the sliding window buffer in seconds
-BUFFER_DURATION = 5
+BUFFER_DURATION = 10.0
 
 # How often to process the buffer in seconds
 # Smaller values = more responsive but more CPU usage
-PROCESS_INTERVAL = 5
+PROCESS_INTERVAL = 10.0
 
 
 # =============================================================================
@@ -60,26 +54,6 @@ TRANSCRIPTION_LANGUAGE = "en"
 
 
 # =============================================================================
-# Speaker Diarization Settings (pyannote.audio)
-# =============================================================================
-
-# Hugging Face token for pyannote models
-# Can also be set via HF_TOKEN or HUGGINGFACE_TOKEN environment variable
-HF_TOKEN = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_TOKEN')
-
-# Use MPS (Apple Silicon GPU) for diarization
-# Set to False to use CPU instead
-USE_MPS = True
-
-# Maximum number of speakers to detect
-# Set to None for automatic detection
-MAX_SPEAKERS = 4
-
-# Minimum number of speakers (optional)
-MIN_SPEAKERS = None
-
-
-# =============================================================================
 # UI Settings
 # =============================================================================
 
@@ -87,28 +61,20 @@ MIN_SPEAKERS = None
 MAX_TRANSCRIPT_ENTRIES = 100
 
 # Auto-refresh interval in seconds when running
-UI_REFRESH_INTERVAL = 2.0
+UI_REFRESH_INTERVAL = 5.0
 
 
 # =============================================================================
-# Speaker Colors
+# Keyword Settings
 # =============================================================================
-
-# Colors for different speakers (cycling)
-SPEAKER_COLORS = [
-    "#1E90FF",  # Blue
-    "#32CD32",  # Green
-    "#FF6347",  # Tomato
-    "#9370DB",  # Purple
-    "#FF8C00",  # Orange
-    "#20B2AA",  # Teal
-    "#FF69B4",  # Pink
-    "#FFD700",  # Gold
-]
 
 # Keyword highlight color
 KEYWORD_HIGHLIGHT_COLOR = "#FFD700"  # Gold
 KEYWORD_HIGHLIGHT_TEXT_COLOR = "black"
+
+# Keyword alert border color
+KEYWORD_ALERT_BORDER_COLOR = "#FFD700"  # Gold
+KEYWORD_ALERT_BG_COLOR = "#2D2D1F"  # Dark gold tint
 
 
 # =============================================================================
@@ -116,7 +82,7 @@ KEYWORD_HIGHLIGHT_TEXT_COLOR = "black"
 # =============================================================================
 
 # Enable verbose logging
-DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
+DEBUG = False
 
 # Print audio levels (useful for debugging audio capture)
 PRINT_AUDIO_LEVELS = False
